@@ -37,7 +37,7 @@ ENV HUGGINGFACE_HUB_CACHE=/data \
 RUN mkdir -p /data /qdrant/storage /app/data
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-RUN apt-get update && apt-get install -y --reinstall ca-certificates \
+RUN apt-get update && apt-get install -y install ca-certificates \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
