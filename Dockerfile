@@ -7,19 +7,18 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# TEI - copy libs and binary only
+# TEI
 COPY --from=tei /usr/local/bin/text-embeddings-router /usr/local/bin/text-embeddings-router
 COPY --from=tei /usr/local/lib /usr/local/lib
 COPY --from=tei /usr/local/libfakeintel.so /usr/local/libfakeintel.so
 COPY --from=tei /usr/lib /usr/lib
-COPY --from=tei /lib /lib
 
 # Qdrant
 COPY --from=qdrant /qdrant /qdrant
 COPY --from=qdrant /usr/lib /usr/lib
-COPY --from=qdrant /lib /lib
 
 # Bifrost
 COPY --from=bifrost /app/main /app/main
@@ -32,15 +31,11 @@ ENV HUGGINGFACE_HUB_CACHE=/data \
     RAYON_NUM_THREADS=8 \
     LD_PRELOAD=/usr/local/libfakeintel.so \
     LD_LIBRARY_PATH=/usr/local/lib \
-    LOG_LEVEL=info \
-    BIFROST_CONFIG=/app/data/config.json
+    LOG_LEVEL=info
 
 RUN mkdir -p /data /qdrant/storage /app/data
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-RUN apt-get update && apt-get install -y --reinstall ca-certificates \
-    && update-ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 7997 6333 6334 8080
 
