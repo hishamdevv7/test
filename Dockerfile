@@ -34,6 +34,7 @@ ENV HUGGINGFACE_HUB_CACHE=/data \
     LOG_LEVEL=info
 
 RUN mkdir -p /data /qdrant/storage /app/data
+COPY config.json /app/data/config.json
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
