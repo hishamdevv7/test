@@ -8,9 +8,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=tei / /
-COPY --from=qdrant / /
-COPY --from=bifrost / /
+# TEI - copy libs and binary only
+COPY --from=tei /usr/local/bin/text-embeddings-router /usr/local/bin/text-embeddings-router
+COPY --from=tei /usr/local/lib /usr/local/lib
+COPY --from=tei /usr/local/libfakeintel.so /usr/local/libfakeintel.so
+COPY --from=tei /usr/lib /usr/lib
+COPY --from=tei /lib /lib
+
+# Qdrant
+COPY --from=qdrant /qdrant /qdrant
+COPY --from=qdrant /usr/lib /usr/lib
+COPY --from=qdrant /lib /lib
+
+# Bifrost
+COPY --from=bifrost /app/main /app/main
+COPY --from=bifrost /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/main /app/docker-entrypoint.sh
 
 ENV HUGGINGFACE_HUB_CACHE=/data \
     PORT=80 \
