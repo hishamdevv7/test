@@ -1,43 +1,26 @@
-FROM ghcr.io/huggingface/text-embeddings-inference:cpu-latest AS tei
-FROM qdrant/qdrant:latest AS qdrant
-FROM maximhq/bifrost:latest AS bifrost
+FROM python:3.11-slim
 
-FROM debian:bookworm-slim
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    supervisor \
-    ca-certificates \
-    && update-ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir \
+    optimum[onnxruntime] \
+    sentence-transformers \
+    transformers \
+    fastapi \
+    uvicorn
 
-# TEI
-COPY --from=tei /usr/local/bin/text-embeddings-router /usr/local/bin/text-embeddings-router
-COPY --from=tei /usr/local/lib /usr/local/lib
-COPY --from=tei /usr/local/libfakeintel.so /usr/local/libfakeintel.so
-COPY --from=tei /usr/lib /usr/lib
+# Export + quantize at build time (bakes the model into the image)
+RUN optimum-cli export onnx \
+    --model ibm-granite/granite-embedding-97m-multilingual-r2 \
+    --task feature-extraction \
+    /app/onnx_model
 
-# Qdrant
-COPY --from=qdrant /qdrant /qdrant
-COPY --from=qdrant /usr/lib /usr/lib
+RUN optimum-cli onnxruntime quantize \
+    --onnx_model /app/onnx_model \
+    --avx512_vnni \
+    -o /app/onnx_model_int8
 
-# Bifrost
-COPY --from=bifrost /app/main /app/main
-COPY --from=bifrost /app/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/main /app/docker-entrypoint.sh
+COPY app.py /app/app.py
 
-ENV HUGGINGFACE_HUB_CACHE=/data \
-    PORT=80 \
-    MKL_ENABLE_INSTRUCTIONS=AVX512_E4 \
-    RAYON_NUM_THREADS=8 \
-    LD_PRELOAD=/usr/local/libfakeintel.so \
-    LD_LIBRARY_PATH=/usr/local/lib \
-    LOG_LEVEL=info
-
-RUN mkdir -p /data /qdrant/storage /app/data
-COPY config.json /app/data/config.json
-
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-EXPOSE 7997 6333 6334 8080
-
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
