@@ -1,14 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from optimum.onnxruntime import ORTModelForFeatureExtraction
-from transformers import AutoTokenizer
-import torch
+from sentence_transformers import SentenceTransformer
 
-MODEL_DIR = "/app/onnx_model_int8"
-BASE_MODEL = "ibm-granite/granite-embedding-97m-multilingual-r2"
-
-tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-model = ORTModelForFeatureExtraction.from_pretrained(MODEL_DIR)
+model = SentenceTransformer(
+    "ibm-granite/granite-embedding-97m-multilingual-r2",
+    backend="openvino",
+    model_kwargs={"file_name": "openvino/openvino_model_qint8_quantized.xml"},
+)
 
 app = FastAPI()
 
@@ -17,7 +15,5 @@ class TextIn(BaseModel):
 
 @app.post("/embed")
 def embed(payload: TextIn):
-    inputs = tokenizer(payload.text, return_tensors="pt", truncation=True)
-    outputs = model(**inputs)
-    embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
+    embedding = model.encode(payload.text).tolist()
     return {"embedding": embedding}
