@@ -14,7 +14,7 @@ ARG HF_TOKEN
 ENV HF_TOKEN=${HF_TOKEN}
 
 RUN python -c "from huggingface_hub import hf_hub_download; \
-    hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'onnx/model_quantized.onnx', local_dir='/app/model'); \
+    hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'onnx/model.onnx', local_dir='/app/model'); \
     hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'tokenizer.json', local_dir='/app/model')"
 
 COPY app.py /app/app.py
