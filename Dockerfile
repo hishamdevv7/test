@@ -3,22 +3,16 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN pip install --no-cache-dir \
-    optimum[onnxruntime] \
     sentence-transformers \
-    transformers \
+    openvino \
     fastapi \
     uvicorn
 
-# Export + quantize at build time (bakes the model into the image)
-RUN optimum-cli export onnx \
-    --model ibm-granite/granite-embedding-97m-multilingual-r2 \
-    --task feature-extraction \
-    /app/onnx_model
-
-RUN optimum-cli onnxruntime quantize \
-    --onnx_model /app/onnx_model \
-    --avx512_vnni \
-    -o /app/onnx_model_int8
+# Pre-download weights at build time (bakes model into image)
+RUN python -c "from sentence_transformers import SentenceTransformer; \
+    SentenceTransformer('ibm-granite/granite-embedding-97m-multilingual-r2', \
+    backend='openvino', \
+    model_kwargs={'file_name': 'openvino/openvino_model_qint8_quantized.xml'})"
 
 COPY app.py /app/app.py
 
