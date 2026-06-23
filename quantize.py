@@ -5,3 +5,5 @@ quantize_dynamic(
     model_output="/app/model/onnx/model.int8.onnx",
     weight_type=QuantType.QInt8
 )
+
+print("Quantization complete")
