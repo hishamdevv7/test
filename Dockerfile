@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir \
 
 ARG HF_TOKEN
 ENV HF_TOKEN=${HF_TOKEN}
+RUN python /app/quantize.py
 
 RUN python -c "from huggingface_hub import hf_hub_download; \
     hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'onnx/model.onnx', local_dir='/app/model'); \
