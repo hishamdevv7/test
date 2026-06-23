@@ -1,1 +1,0 @@
-{ "vector_store": { "enabled": true, "type": "qdrant", "config": { "host": "localhost", "port": 6334 } } }
