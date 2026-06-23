@@ -5,7 +5,7 @@ from tokenizers import Tokenizer
 import numpy as np
 
 session = ort.InferenceSession(
-    "/app/model/onnx/model_quantized.onnx",
+    "/app/model/onnx/model.onnx",
     providers=["CPUExecutionProvider"],
     sess_options=ort.SessionOptions()
 )
