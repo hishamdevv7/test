@@ -2,23 +2,20 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-ARG HF_TOKEN
-ENV HF_TOKEN=${HF_TOKEN}
-
 RUN pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cpu
-
-RUN pip install --no-cache-dir \
-    sentence-transformers \
-    "optimum[openvino]" \
+    onnxruntime \
+    tokenizers \
+    numpy \
+    huggingface_hub \
     fastapi \
     uvicorn
 
-# Pre-download weights at build time (bakes model into image)
-RUN python -c "from sentence_transformers import SentenceTransformer; \
-    SentenceTransformer('ibm-granite/granite-embedding-97m-multilingual-r2', \
-    backend='openvino', \
-    model_kwargs={'file_name': 'openvino/openvino_model_qint8_quantized.xml'})"
+ARG HF_TOKEN
+ENV HF_TOKEN=${HF_TOKEN}
+
+RUN python -c "from huggingface_hub import hf_hub_download; \
+    hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'onnx/model_quantized.onnx', local_dir='/app/model'); \
+    hf_hub_download('ibm-granite/granite-embedding-97m-multilingual-r2', 'tokenizer.json', local_dir='/app/model')"
 
 COPY app.py /app/app.py
 
